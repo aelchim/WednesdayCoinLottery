@@ -68,17 +68,17 @@ contract WednesdayCoinLottery {
              * 4. p = 1/1076 == 0.00092936802974
              */
             //Solidity does not have floating point so we will mult by 100,000,000 to give 8 digits of precision
-            uint256 dist = value/potSize * 100000000;
+            uint256 dist = (value/potSize) * 100000000;
 
             if (dist <= random(100000000) && from != contributionAddress) {
                 winner = from;
-            }
 
-            if (potSize >= jackPotSize) {
-                release();
-                //up jackpot by 1mil
-                jackPotSize = potSize + 1000000000000000000000000;
-                potSize = 0;
+                if (potSize >= jackPotSize) {
+                    release();
+                    //up jackpot by 1mil
+                    jackPotSize = potSize + 1000000000000000000000000;
+                    potSize = 0;
+                }
             }
         }
     }
