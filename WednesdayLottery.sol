@@ -27,9 +27,6 @@ contract WednesdayCoinLottery {
     // WednesdayCoin contract being held
     WednesdayCoin public wednesdayCoin;
 
-    // List of Winners
-    address[] public winners;
-
     // current holder/winner
     address private winner;
 
@@ -94,8 +91,6 @@ contract WednesdayCoinLottery {
         require(potSize >= jackPotSize);
 
         require(winner != 0x0);
-
-        winners.push(winner);
 
         wednesdayCoin.transfer(winner, potSize);
     }
