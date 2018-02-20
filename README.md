@@ -1,5 +1,8 @@
 # WednesdayCoinLottery
-Lottery game for WednesdayCoin. In this game people will use WednesdayCoin to enter the lottery. That coin goes into the pot. The pot then continues to grow until it hits the designated jackpot amount (starts at 1 million). Once the pot size is greater than or equal to the jackpot, the lottery pays out. Once it pays out the pot resets to 0 and the jackpot gets upped by 1mil + pot size for next time.
+Lottery game for WednesdayCoin. In this game people will use WednesdayCoin to enter the lottery. That coin goes into the pot. The pot then continues to grow until it hits the designated jackpot amount (starts at 100k). Once the pot size is greater than or equal to the jackpot, the lottery pays out. Once it pays out the pot resets to 0 and the jackpot gets upped by 100k for next time.
+
+# WednesdayCoinLottery Oraclize
+In this implementation we are using the oraclize function to come up with a secured random number. This is currently using the same approach for the winners but is too expensive as this requires the contract address to have ETH and having a call to the service for a random number per submission will be much too expensive. The best approach for this is to put all entries into a list then use the oraclize service to pick one randomly from that. Downside is that the winner will not be weighted based on amount contributed. Fix to that may be to have a static amount that is needed for entry - say 10k or 25k as the price for entry. 
 
 ## Winners
 For-loops are expensive in solidity so we have 2 choices
@@ -31,3 +34,6 @@ The random currently being used here is not secure enough for a lottery because 
 
 ### Possible solution for random
 The issue is that the seed can be manipulated by the miner. One possible solution is to have the seed be passed in by the contribution address.  We would no longer payout only if the pot is more than the jackpot, the contract would also need confirmation from the contribution address. This is still problematic because it centralizes the generation of the seed, both how and when. This can lead to mistrust as the contribution has all the power of the payouts.
+
+### Oraclize
+In the normal implementation we are using the random function stated above. In the Oraclize implementation we are using the (oraclize)[https://docs.oraclize.it/] service to generate a secure random number. Issue with that is that it is expensive and requires ETH to be in the contract address and to be used everytime it is called.
