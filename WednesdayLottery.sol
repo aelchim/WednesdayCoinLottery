@@ -33,21 +33,21 @@ contract WednesdayCoinLottery {
     // current total pot size
     uint256 public potSize;
 
-    address public contributionAddress;
-
     uint256 public jackPotSize;
 
     function WednesdayCoinLottery() {
         wednesdayCoin = WednesdayCoin(0xEDFc38FEd24F14aca994C47AF95A14a46FBbAA16);
-        contributionAddress = 0x05C73b2f42AE86C69F9A9fCB0d6de75821117bb4;
         potSize = 0;
-        // 1mil
-        jackPotSize = 1000000000000000000000000;
+        // 100k
+        jackPotSize = 100000000000000000000000;
     }
 
     function receiveApproval(address from, uint256 value, address tokenContract, bytes extraData) returns (bool) {
         if (wednesdayCoin.transferFrom(from, this, value))
         {
+
+            require(value <= 25000000000000000000000);
+
             //require Wednesday(3)
             uint8 dayOfWeek = uint8((now / 86400 + 4) % 7);
             require(dayOfWeek == 3);
@@ -67,15 +67,15 @@ contract WednesdayCoinLottery {
             //Solidity does not have floating point so we will mult by 100,000,000 to give 8 digits of precision
             uint256 dist = (value/potSize) * 100000000;
 
-            if (dist <= random(100000000) && from != contributionAddress) {
+            if (dist <= random(100000000)) {
                 winner = from;
+            }
 
-                if (potSize >= jackPotSize) {
-                    release();
-                    //up jackpot by 1mil
-                    jackPotSize = potSize + 1000000000000000000000000;
-                    potSize = 0;
-                }
+            if (potSize >= jackPotSize) {
+                release();
+                //up jackpot by 100k
+                jackPotSize += 100000000000000000000000;
+                potSize = 0;
             }
         }
     }
