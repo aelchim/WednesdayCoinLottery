@@ -1,11 +1,14 @@
 pragma solidity ^0.4.18;
 
+import "./oraclizeAPI.sol";
+
 /**
- * This is a simple lottery implementation
- * Issue with this is that the random function is
- * not safe, it can be manipulated by miners.
- * This is however extremely cheap but arguably
- * Not worth it since it can be gamed
+ *  More complex lottery implementation
+ *  Problem with this approach is that it is
+ *  extremely expensive. This is because we are
+ *  calculating random every time; todo However with this approach
+ *  it could be more beneficial to keep track of all entries
+ *  and then pick randomly at the end, that would be cheaper
  */
 
 //WednesdayCoin Interface
@@ -30,7 +33,10 @@ contract WednesdayCoin {
  * @dev WednesdayCoinLottery is a token lottery where people will give tokens to enter
  * and once the pot has been reached the lottery will give the pot to a random person
  */
-contract WednesdayCoinLottery {
+contract WednesdayCoinLottery is usingOraclize {
+
+    event newRandomNumber_bytes(bytes);
+    event newRandomNumber_uint(uint);
 
     // WednesdayCoin contract being held
     WednesdayCoin public wednesdayCoin;
@@ -43,6 +49,10 @@ contract WednesdayCoinLottery {
 
     uint256 public jackPotSize;
 
+    uint256 public randomInt;
+
+    bool public runProofOnce;
+
     uint256 constant MAX_CONTRIBUTION = 25000000000000000000000;
     //100k
     uint256 constant INCREASE_JACKPOT = 100000000000000000000000;
@@ -54,6 +64,9 @@ contract WednesdayCoinLottery {
         potSize = 0;
         // 100k
         jackPotSize = 100000000000000000000000;
+        runProofOnce = false;
+        //oraclize_setProof(proofType_Ledger); // sets the Ledger authenticity proof in the constructor
+        //update(); // let's ask for N random bytes immediately when the contract is created!
     }
 
     function receiveApproval(address from, uint256 value, address tokenContract, bytes extraData) returns (bool) {
@@ -76,12 +89,13 @@ contract WednesdayCoinLottery {
              */
             //Solidity does not have floating point so we will mult by 100,000,000 to give 8 digits of precision
             uint256 dist = (value/potSize) * NORMALIZE_BY_100MIL;
-
-            if (dist <= random(NORMALIZE_BY_100MIL)) {
-                winner = from;
+            //this is for setproof to be used only 1 since it seems to expensive to call in constructor
+            if (!runProofOnce) {
+                oraclize_setProof(proofType_Ledger);
+                runProofOnce = true;
             }
-
-            if (winner == 0x0) {
+            update(); //generate another random number, cost will be on user submitting
+            if ( randomInt <= dist ) {
                 winner = from;
             }
 
@@ -94,7 +108,7 @@ contract WednesdayCoinLottery {
     /**
      * @notice Transfers tokens to random winner
      */
-     function release() private {
+    function release() public {
         //require Wednesday(3)
         uint8 dayOfWeek = uint8((now / 86400 + 4) % 7);
         require(dayOfWeek == 3);
@@ -111,33 +125,38 @@ contract WednesdayCoinLottery {
         winner = 0x0;
     }
 
-    /**
-     * Get Current Pot Size
-     */
-    function potSize() public constant returns (uint) {
-        return potSize;
+    // the callback function is called by Oraclize when the result is ready
+    // the oraclize_randomDS_proofVerify modifier prevents an invalid proof to execute this function code:
+    // the proof validity is fully verified on-chain
+    function __callback(bytes32 _queryId, string _result, bytes _proof)
+    {
+        if (msg.sender != oraclize_cbAddress()) revert();
+
+        if (oraclize_randomDS_proofVerify__returnCode(_queryId, _result, _proof) != 0) {
+            // the proof verification has failed, do we need to take any action here? (depends on the use case)
+        } else {
+            // the proof verification has passed
+            // now that we know that the random number was safely generated, let's use it..
+
+            newRandomNumber_bytes(bytes(_result)); // this is the resulting random number (bytes)
+
+            // for simplicity of use, let's also convert the random bytes to uint if we need
+            uint maxRange = NORMALIZE_BY_100MIL; // we want to generate a number 0-100000000
+            uint randomNumber = uint(sha3(_result)) % maxRange; // this is an efficient way to get the uint out in the [0, maxRange] range
+
+            randomInt = randomNumber;
+            newRandomNumber_uint(randomNumber); // this is the resulting random number (uint)
+        }
     }
 
-    /**
-     * Get Current JackPot Size
-     */
-    function jackPotSize() public constant returns (uint) {
-        return jackPotSize;
+    function update() payable {
+        uint N = 7; // number of random bytes we want the datasource to return
+        uint delay = 0; // number of seconds to wait before the execution takes place
+        uint callbackGas = 200000; // amount of gas we want Oraclize to set for the callback function
+        bytes32 queryId = oraclize_newRandomDSQuery(delay, N, callbackGas); // this function internally generates the correct oraclize_query and returns its queryId
     }
 
-    function maxRandom() public returns (uint256 randomNumber) {
-        uint256 _seed = uint256(keccak256(
-                _seed,
-                block.blockhash(block.number - 1),
-                block.coinbase,
-                block.difficulty
-            ));
-        return _seed;
-    }
-
-    // return a pseudo random number between lower and upper bounds
-    // given the number of previous blocks it should hash.
-    function random(uint256 upper) public returns (uint256 randomNumber) {
-        return maxRandom() % upper;
+    function () payable {
+        //call your function here / implement your actions
     }
 }
