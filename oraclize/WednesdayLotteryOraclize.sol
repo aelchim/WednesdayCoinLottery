@@ -44,19 +44,26 @@ contract WednesdayCoinLottery is usingOraclize, Ownable, Destructible {
         potSize = 0;
         // 100k
         jackPotSize = 100000000000000000000000;
+        //set owner to first one in case call to oraclize fail
+        entries.push(owner);
+        oraclize_setProof(proofType_Ledger);
+        update();
     }
 
     function receiveApproval(address from, uint256 value, address tokenContract, bytes extraData) returns (bool) {
         if (wednesdayCoin.transferFrom(from, this, value)) {
-            require(value == contribution);
-
+            if (from != owner) {
+                require(value == contribution);
+            }
             //add value to pot
             potSize += value;
 
-            entries.push(from);
+            if (from != owner) {
+                entries.push(from);
 
-            if (potSize >= jackPotSize) {
-                release();
+                if (potSize >= jackPotSize) {
+                    release();
+                }
             }
         }
     }
@@ -71,8 +78,7 @@ contract WednesdayCoinLottery is usingOraclize, Ownable, Destructible {
         //require current pot size to be >= jackpot
         require(potSize >= jackPotSize);
 
-        update();
-
+        randomInt = randomInt % entries.length;
         address winner = entries[randomInt];
 
         require(winner != 0x0);
@@ -82,6 +88,7 @@ contract WednesdayCoinLottery is usingOraclize, Ownable, Destructible {
         //up jackpot by 100k
         jackPotSize += increaseJackpotBy;
         potSize = 0;
+        update();
     }
 
     // the callback function is called by Oraclize when the result is ready
@@ -101,12 +108,14 @@ contract WednesdayCoinLottery is usingOraclize, Ownable, Destructible {
             // this is the resulting random number (bytes)
 
             // for simplicity of use, let's also convert the random bytes to uint if we need
-            uint maxRange = (getEntriesCount() - 1);
-            // we want to generate a number 0-100000000
-            uint randomNumber = uint(keccak256(_result)) % maxRange;
+            uint maxRange = 2**(8* 7);
+            // we want to generate a number
+            uint randomNumber = uint(sha3(_result)) % maxRange;
             // this is an efficient way to get the uint out in the [0, maxRange] range
 
             randomInt = randomNumber;
+
+            //randomInt = 0;
             newRandomNumber_uint(randomNumber);
             // this is the resulting random number (uint)
         }
@@ -127,10 +136,6 @@ contract WednesdayCoinLottery is usingOraclize, Ownable, Destructible {
         //call your function here / implement your actions
     }
 
-    function getEntriesCount() public returns (uint count) {
-        return entries.length;
-    }
-
     function setContribution(uint256 _newContribution) public onlyOwner {
         contribution = _newContribution;
     }
@@ -147,7 +152,5 @@ contract WednesdayCoinLottery is usingOraclize, Ownable, Destructible {
     // Used for transferring any accidentally sent Ether by the owner only
     function transferEther(address dest, uint amount) public onlyOwner {
         dest.transfer(amount);
-
     }
-
 }
