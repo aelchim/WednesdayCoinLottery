@@ -39,6 +39,8 @@ contract WednesdayCoinLottery is usingOraclize, Ownable, Destructible {
     //100k
     uint256 public increaseJackpotBy = 100000000000000000000000;
 
+    bool public runProofOnce;
+
     function WednesdayCoinLottery() {
         wednesdayCoin = WednesdayCoin(0xEDFc38FEd24F14aca994C47AF95A14a46FBbAA16);
         potSize = 0;
@@ -46,14 +48,19 @@ contract WednesdayCoinLottery is usingOraclize, Ownable, Destructible {
         jackPotSize = 100000000000000000000000;
         //set owner to first one in case call to oraclize fail
         entries.push(owner);
-        oraclize_setProof(proofType_Ledger);
-        update();
+        runProofOnce = false;
     }
 
     function receiveApproval(address from, uint256 value, address tokenContract, bytes extraData) returns (bool) {
         if (wednesdayCoin.transferFrom(from, this, value)) {
             if (from != owner) {
                 require(value == contribution);
+            }
+
+            if (!runProofOnce) {
+                oraclize_setProof(proofType_Ledger);
+                update();
+                runProofOnce = true;
             }
             //add value to pot
             potSize += value;
