@@ -50,7 +50,7 @@ contract WednesdayCoinLottery {
     uint256 constant NORMALIZE_BY_100MIL = 100000000;
 
     function WednesdayCoinLottery() {
-        wednesdayCoin = WednesdayCoin(0xEDFc38FEd24F14aca994C47AF95A14a46FBbAA16);
+        wednesdayCoin = WednesdayCoin(0x7848ae8f19671dc05966dafbefbbbb0308bdfabd);
         potSize = 0;
         // 100k
         jackPotSize = 100000000000000000000000;
