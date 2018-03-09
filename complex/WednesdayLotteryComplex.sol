@@ -33,6 +33,8 @@ contract WednesdayCoinLottery is Ownable, Destructible {
     //combined hash of entry addresses
     uint256 public aggregateHash = 0x0;
 
+    uint256 public entriesCount = 0;
+
     //10k entry
     uint256 public contribution = 10000000000000000000000;
 
@@ -52,6 +54,7 @@ contract WednesdayCoinLottery is Ownable, Destructible {
             if (from != owner) {
                 require(value == contribution);
                 entries.push(from);
+                entriesCount++;
                 aggregateHash = uint256(keccak256(aggregateHash, from));
             }
 
@@ -75,7 +78,7 @@ contract WednesdayCoinLottery is Ownable, Destructible {
         //This is to prove that the random number we submit is the same one calculated before the start of the lottery
         require(uint256(keccak256(_randomNumber)) == hashProof);
 
-        uint256 randomInt = uint256(keccak256(aggregateHash, _randomNumber)) % (entries.length - 1);
+        uint256 randomInt = uint256(keccak256(aggregateHash, _randomNumber)) % (entriesCount - 1);
         address winner = entries[randomInt];
 
         //check that winner is not 0x0
