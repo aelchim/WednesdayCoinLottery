@@ -68,11 +68,11 @@ contract WednesdayCoinLottery is Ownable, Destructible {
      */
     function release(uint256 _randomNumber, uint256 _newHashProof) public onlyOwner {
         require(stopLottery == false);
-        //require Wednesday(3)
+        //require Wednesday(3) - this is an extra check
         uint8 dayOfWeek = uint8((now / 86400 + 4) % 7);
         require(dayOfWeek == 3);
 
-        //Check hat the hashproof has been set
+        //Check that the hashproof has been set
         require(hashProof != 0x0);
 
         //This is to prove that the random number we submit is the same one calculated before the start of the lottery
@@ -116,5 +116,12 @@ contract WednesdayCoinLottery is Ownable, Destructible {
 
     function clearEntries() public onlyOwner {
         delete entries;
+    }
+
+    function pushEntry(address entry) public onlyOwner {
+        require(stopLottery == false);
+        entries.push(entry);
+        entriesCount++;
+        aggregateHash = uint256(keccak256(aggregateHash, entry));
     }
 }
