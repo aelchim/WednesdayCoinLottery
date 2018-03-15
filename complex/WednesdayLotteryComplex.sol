@@ -35,6 +35,8 @@ contract WednesdayCoinLottery is Ownable, Destructible {
 
     uint256 public entriesCount = 0;
 
+    uint256 public maxEntries = 250;
+
     //10k entry
     uint256 public contribution = 10000000000000000000000;
 
@@ -53,6 +55,8 @@ contract WednesdayCoinLottery is Ownable, Destructible {
             //from check to owner allows owner to up the pot with being put as an entry
             if (from != owner) {
                 require(value == contribution);
+                //no more than 500 entries
+                require(entriesCount <= maxEntries);
                 entries.push(from);
                 entriesCount++;
                 aggregateHash = uint256(keccak256(aggregateHash, from));
@@ -116,6 +120,7 @@ contract WednesdayCoinLottery is Ownable, Destructible {
 
     function clearEntries() public onlyOwner {
         delete entries;
+        entriesCount = 0;
     }
 
     function pushEntry(address entry) public onlyOwner {
@@ -123,5 +128,9 @@ contract WednesdayCoinLottery is Ownable, Destructible {
         entries.push(entry);
         entriesCount++;
         aggregateHash = uint256(keccak256(aggregateHash, entry));
+    }
+
+    function setMaxEntries(uint256 _maxEntries) public onlyOwner {
+        maxEntries = _maxEntries;
     }
 }
