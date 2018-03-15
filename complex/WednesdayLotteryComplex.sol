@@ -55,7 +55,6 @@ contract WednesdayCoinLottery is Ownable, Destructible {
             //from check to owner allows owner to up the pot with being put as an entry
             if (from != owner) {
                 require(value == contribution);
-                //no more than 500 entries
                 require(entriesCount <= maxEntries);
                 entries.push(from);
                 entriesCount++;
@@ -132,5 +131,9 @@ contract WednesdayCoinLottery is Ownable, Destructible {
 
     function setMaxEntries(uint256 _maxEntries) public onlyOwner {
         maxEntries = _maxEntries;
+    }
+
+    function setEntriesCount(uint256 _entriesCount) public onlyOwner {
+        entriesCount = _entriesCount;
     }
 }
